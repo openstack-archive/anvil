@@ -23,7 +23,25 @@ from anvil import settings
 from anvil import shell as sh
 from anvil import utils
 
+from anvil.packaging.helpers import pip_helper
+
 LOG = logging.getLogger(__name__)
+
+
+def _fetch_missing_extra(python_names_in, python_names_out):
+    python_missing_names = set()
+    python_extra_names = set()
+    python_reqs_in = set(pip_helper.extract_requirement(n)
+                         for n in python_names_in)
+    python_reqs_out = set(pip_helper.extract_requirement(n)
+                          for n in python_names_out)
+    for req in python_reqs_in:
+        if req not in python_reqs_out:
+            python_missing_names.add(str(req))
+    for req in python_reqs_out:
+        if req not in python_reqs_in:
+            python_extra_names.add(str(req))
+    return (python_missing_names, python_extra_names)
 
 
 class Helper(object):
@@ -116,11 +134,13 @@ class Helper(object):
             elif line.startswith("# Source:"):
                 current_source = line[len("# Source:"):].strip()
 
-        missing_names = set(python_names) - set(result.keys())
+        found_names = set(result.keys())
+        found_names.update(conflicts.keys())
+        missing_names, extra_names = _fetch_missing_extra(python_names,
+                                                          found_names)
         if missing_names:
             raise AssertionError("Python names were lost during conversion: %s"
                                  % ', '.join(sorted(missing_names)))
-        extra_names = set(result.keys()) - set(python_names)
         if extra_names:
             raise AssertionError("Extra python names were found during conversion: %s"
                                  % ', '.join(sorted(extra_names)))

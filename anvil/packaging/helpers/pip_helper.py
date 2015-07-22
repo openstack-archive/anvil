@@ -15,6 +15,7 @@
 #    under the License.
 
 from distutils import version as dist_version
+import glob
 import pkg_resources
 import re
 import sys
@@ -23,6 +24,7 @@ import threading
 
 from pip import req as pip_req
 import pkginfo
+import six
 
 try:
     from pip import util as pip_util
@@ -110,16 +112,32 @@ def get_directory_details(path, pbr_version=None):
         if cache_key in EGGS_DETAILED:
             return EGGS_DETAILED[cache_key]
 
-        cmd = [sys.executable, 'setup.py', 'egg_info']
-        if pbr_version:
-            env_overrides = {
-                "PBR_VERSION": str(pbr_version),
-            }
-        else:
-            env_overrides = {}
-        sh.execute(cmd, cwd=path, env_overrides=env_overrides)
-        details = pkginfo.get_metadata(path)
-        if not details:
+        details = None
+        skip_paths = [
+            sh.joinpths(path, "PKG-INFO"),
+            sh.joinpths(path, "EGG-INFO"),
+        ]
+        skip_paths.extend(glob.glob(sh.joinpths(path, "*.egg-info")))
+        if any(sh.exists(a_path) for a_path in skip_paths):
+            # Some packages seem to not support the 'egg_info' call and
+            # provide there own path/file that contains this information
+            # already, so just use it if we can get at it...
+            #
+            # Ie for pyyaml3.x:
+            #
+            # error: invalid command 'egg_info'
+            details = pkginfo.Develop(path)
+        if not details or not details.name:
+            cmd = [sys.executable, 'setup.py', 'egg_info']
+            if pbr_version:
+                env_overrides = {
+                    "PBR_VERSION": str(pbr_version),
+                }
+            else:
+                env_overrides = {}
+            sh.execute(cmd, cwd=path, env_overrides=env_overrides)
+            details = pkginfo.get_metadata(path)
+        if not details or not details.name:
             raise RuntimeError("No egg detail information discovered"
                                " at '%s'" % path)
 
@@ -129,6 +147,20 @@ def get_directory_details(path, pbr_version=None):
         for attr_name in ['description', 'author',
                           'version', 'name', 'summary']:
             egg_details[attr_name] = getattr(details, attr_name)
+        for attr_name in ['description', 'author', 'summary']:
+            attr_value = egg_details[attr_name]
+            if isinstance(attr_value, six.text_type):
+                # Fix any unicode which will cause unicode decode failures...
+                # versions or names shouldn't be unicode, and the rest
+                # we don't really care about being unicode (since its
+                # just used for logging right now anyway...).
+                #
+                # The reason this is done is that 'elasticsearch' seems to
+                # have a unicode author name, and that causes the log_object
+                # to blowup, so just avoid that by replacing this information
+                # in the first place.
+                egg_details[attr_name] = attr_value.encode("ascii",
+                                                           errors='replace')
 
         LOG.debug("Extracted '%s' egg detail information:", path)
         utils.log_object(egg_details, logger=LOG, level=logging.DEBUG)
