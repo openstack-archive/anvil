@@ -208,7 +208,9 @@ fi
 %{_usr}/bin/*
 
 %if ! 0%{?usr_only}
-%config(noreplace) %{_sysconfdir}/keystone
+%dir %{_sysconfdir}/keystone
+%{_sysconfdir}/keystone/*
+%config(noreplace) %{_sysconfdir}/keystone/keystone-paste.ini
 %dir %attr(0755, keystone, nobody) %{_sharedstatedir}/keystone
 %dir %attr(0755, keystone, nobody) %{_localstatedir}/log/keystone
 %dir %attr(0755, keystone, nobody) %{_localstatedir}/run/keystone

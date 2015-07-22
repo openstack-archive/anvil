@@ -134,7 +134,6 @@ Components common to all OpenStack Ironic services
 %dir %attr(0755, ironic, ironic) %{_localstatedir}/run/ironic
 
 %config(noreplace) %attr(-,root,ironic) %{_sysconfdir}/ironic
-%config(noreplace) %attr(0640, root, ironic) %{_sysconfdir}/ironic/policy.json
 %config(noreplace) %attr(0640, root, ironic) %{_sysconfdir}/ironic/ironic.conf
 
 %config(noreplace) %{_sysconfdir}/ironic/rootwrap.conf

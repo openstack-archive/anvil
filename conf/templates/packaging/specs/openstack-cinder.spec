@@ -304,7 +304,9 @@ fi
 %endif
 
 %dir %{_sysconfdir}/cinder
-%config(noreplace) %attr(-, root, cinder) %{_sysconfdir}/cinder/*
+%attr(-, root, cinder) %{_sysconfdir}/cinder/*
+%config(noreplace) %attr(-, root, cinder) %{_sysconfdir}/cinder/api-paste.ini
+%config(noreplace) %attr(-, root, cinder) %{_sysconfdir}/cinder/rootwrap.conf
 %config(noreplace) %{_sysconfdir}/logrotate.d/openstack-cinder
 %config(noreplace) %{_sysconfdir}/sudoers.d/cinder
 %config(noreplace) %{_sysconfdir}/tgt/conf.d/cinder.conf

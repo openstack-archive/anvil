@@ -638,7 +638,10 @@ fi
 
 %if ! 0%{?usr_only}
 %dir %{_sysconfdir}/nova
-%config(noreplace) %attr(-, root, nova) %{_sysconfdir}/nova/*
+%attr(-, root, nova) %{_sysconfdir}/nova/*
+%config(noreplace) %attr(-, root, nova) %{_sysconfdir}/nova/api-paste.ini
+%config(noreplace) %attr(-, root, nova) %{_sysconfdir}/nova/cells.json
+%config(noreplace) %attr(-, root, nova) %{_sysconfdir}/nova/rootwrap.conf
 %config(noreplace) %{_sysconfdir}/logrotate.d/openstack-nova
 %config(noreplace) %{_sysconfdir}/sudoers.d/nova
 %config(noreplace) %{_sysconfdir}/polkit-1/localauthority/50-local.d/50-nova.pkla

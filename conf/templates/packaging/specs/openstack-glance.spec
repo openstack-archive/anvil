@@ -259,7 +259,18 @@ fi
 %{_unitdir}/*
 %endif
 %dir %{_sysconfdir}/glance
-%config(noreplace) %attr(-, root, glance) %{_sysconfdir}/glance/*
+%attr(-, root, glance) %{_sysconfdir}/glance/*
+%config(noreplace) %attr(-, root, glance) %{_sysconfdir}/glance/glance-api.conf
+%config(noreplace) %attr(-, root, glance) %{_sysconfdir}/glance/glance-api-paste.ini
+%config(noreplace) %attr(-, root, glance) %{_sysconfdir}/glance/glance-cache.conf
+%config(noreplace) %attr(-, root, glance) %{_sysconfdir}/glance/glance-manage.conf
+%config(noreplace) %attr(-, root, glance) %{_sysconfdir}/glance/glance-registry.conf
+%config(noreplace) %attr(-, root, glance) %{_sysconfdir}/glance/glance-registry-paste.ini
+%config(noreplace) %attr(-, root, glance) %{_sysconfdir}/glance/glance-scrubber.conf
+%config(noreplace) %attr(-, root, glance) %{_sysconfdir}/glance/glance-search.conf
+%config(noreplace) %attr(-, root, glance) %{_sysconfdir}/glance/glance-search-paste.ini
+%config(noreplace) %attr(-, root, glance) %{_sysconfdir}/glance/schema-image.json
+%config(noreplace) %attr(-, root, glance) %{_sysconfdir}/glance/schema-policy.json
 %config(noreplace) %attr(-, root, glance) %{_sysconfdir}/logrotate.d/openstack-glance
 %dir %attr(0755, glance, nobody) %{_localstatedir}/lib/glance
 %dir %attr(0755, glance, nobody) %{_localstatedir}/lib/glance/images

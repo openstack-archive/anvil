@@ -1086,7 +1086,6 @@ fi
 %endif
 %dir %{_sysconfdir}/neutron
 %{_sysconfdir}/neutron/release
-%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/policy.json
 %config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/neutron.conf
 %config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/*.ini
 #if $older_than('2015.1')

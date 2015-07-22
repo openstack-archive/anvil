@@ -157,7 +157,6 @@ Components common to all OpenStack Heat services
 %config(noreplace) %attr(0640, root, heat) %{_sysconfdir}/heat/heat.conf
 #end if
 %config(noreplace) %attr(0640, root, heat) %{_sysconfdir}/heat/api-paste.ini
-%config(noreplace) %attr(0640, root, heat) %{_sysconfdir}/heat/policy.json
 %config(noreplace) %{_sysconfdir}/logrotate.d/heat
 %endif
 

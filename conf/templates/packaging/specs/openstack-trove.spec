@@ -240,7 +240,8 @@ fi
 %{_usr}/bin/*
 
 %if ! 0%{?usr_only}
-%config(noreplace) %{_sysconfdir}/trove
+%dir %{_sysconfdir}/trove
+%config(noreplace) %{_sysconfdir}/trove/api-paste.ini
 %dir %attr(0755, trove, nobody) %{_sharedstatedir}/trove
 %dir %attr(0755, trove, nobody) %{_localstatedir}/log/trove
 %dir %attr(0755, trove, nobody) %{_localstatedir}/run/trove
