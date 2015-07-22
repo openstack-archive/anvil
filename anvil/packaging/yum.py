@@ -808,8 +808,12 @@ class YumDependencyHandler(base.DependencyHandler):
             "--formats=tar",
             "--dist-dir", self.rpm_sources_dir,
         ]
+        env_overrides = {
+            'PBR_VERSION': version,
+        }
         out_filename = sh.joinpths(self.log_dir, "sdist-%s.log" % (instance.name))
-        sh.execute_save_output(cmdline, out_filename, cwd=pkg_dir)
+        sh.execute_save_output(cmdline, out_filename,
+                               cwd=pkg_dir, env_overrides=env_overrides)
         archive_name = sh.joinpths(self.rpm_sources_dir, "%s.tar" % (base_name))
         if ensure_exists:
             with contextlib.closing(tarfile.open(archive_name, 'r')) as tfh:
