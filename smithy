@@ -196,9 +196,9 @@ bootstrap_virtualenv()
         dump_list $deps
         echo "Please wait..."
         if [ "$VERBOSE" == "0" ]; then
-            $PIP install -r requirements.txt > /dev/null 2>&1
+            $PIP --no-cache-dir install -r requirements.txt > /dev/null 2>&1
         else
-            $PIP install -v -r requirements.txt
+            $PIP --no-cache-dir install -v -r requirements.txt
         fi
         if [ "$?" != "0" ]; then
             return 1
