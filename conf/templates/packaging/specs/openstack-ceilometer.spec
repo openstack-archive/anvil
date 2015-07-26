@@ -7,7 +7,7 @@
 %if ! 0%{?overwrite_configs}
 %global configfile %config(noreplace)
 %else
-%global configfile %config
+%global configfile %verify(mode)
 %endif
 
 Name:             openstack-ceilometer
