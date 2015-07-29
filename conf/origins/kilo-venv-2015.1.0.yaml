@@ -81,6 +81,7 @@ nova:
   pips:
   - name: libvirt-python
   - name: functools32
+  - name: python-memcached
 neutron:
   repo: git://github.com/openstack/neutron.git
   tag: 2015.1.0
