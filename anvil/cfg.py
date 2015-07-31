@@ -17,10 +17,14 @@
 import re
 
 from anvil import exceptions
+from anvil import log as logging
 from anvil import origins as _origins
 from anvil import settings
 from anvil import shell as sh
 from anvil import utils
+
+
+LOG = logging.getLogger(__name__)
 
 
 class YamlMergeLoader(object):
@@ -81,16 +85,21 @@ class YamlMergeLoader(object):
                 origins_opts = origins[component]
             except KeyError:
                 pass
-        general_component_opts = self._base_loader.load('general')
-        component_specific_opts = self._base_loader.load(component)
+
+        component_opts = []
+        for c in ('general', component):
+            try:
+                component_opts.append(self._base_loader.load(c))
+            except exceptions.YamlConfigNotFoundException:
+                LOG.info("Unable to find component specific configuration"
+                         " for component '%s'", c, exc_info=True)
 
         # NOTE (vnovikov): merge order is the same as arguments order below.
         merged_opts = utils.merge_dicts(
             dir_opts,
             distro_opts,
             origins_opts,
-            general_component_opts,
-            component_specific_opts,
+            *component_opts
         )
         return merged_opts
 
