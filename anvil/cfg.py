@@ -17,10 +17,14 @@
 import re
 
 from anvil import exceptions
+from anvil import log as logging
 from anvil import origins as _origins
 from anvil import settings
 from anvil import shell as sh
 from anvil import utils
+
+
+LOG = logging.getLogger(__name__)
 
 
 class YamlMergeLoader(object):
@@ -65,7 +69,13 @@ class YamlMergeLoader(object):
             if persona is not None:
                 # Note: any additional redefines could be added here.
                 persona_specific = persona.component_options.get(component, {})
-                self._base_loader.update_cache(conf, persona_specific)
+                try:
+                    self._base_loader.update_cache(conf, persona_specific)
+                except exceptions.YamlConfigNotFoundException:
+                    LOG.warn("Unable to update the loaders cache with"
+                             " component '%s' configuration using"
+                             " persona specific data: %s", conf,
+                             persona_specific, exc_info=True)
 
     def load(self, distro, component, persona=None, origins_patch=None):
         # NOTE (vnovikov): applying takes place before loading reference links
@@ -81,16 +91,21 @@ class YamlMergeLoader(object):
                 origins_opts = origins[component]
             except KeyError:
                 pass
-        general_component_opts = self._base_loader.load('general')
-        component_specific_opts = self._base_loader.load(component)
+
+        component_opts = []
+        for conf in ('general', component):
+            try:
+                component_opts.append(self._base_loader.load(conf))
+            except exceptions.YamlConfigNotFoundException:
+                LOG.warn("Unable to find component specific configuration"
+                         " for component '%s'", conf, exc_info=True)
 
         # NOTE (vnovikov): merge order is the same as arguments order below.
         merged_opts = utils.merge_dicts(
             dir_opts,
             distro_opts,
             origins_opts,
-            general_component_opts,
-            component_specific_opts,
+            *component_opts
         )
         return merged_opts
 
@@ -245,8 +260,6 @@ class YamlRefLoader(object):
 
     def update_cache(self, conf, dict2update):
         self._cache(conf)
-        #for k, v in dict2update.items():
-        #    self._cached[conf][k] = v
 
         # NOTE (vnovikov): should remove obsolete processed data
         self._cached[conf].update(dict2update)
