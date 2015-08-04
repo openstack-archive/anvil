@@ -215,10 +215,6 @@ def read_requirement_files(files):
                 try:
                     reqs = REQUIREMENT_FILE_CACHE[cache_key]
                 except KeyError:
-                    LOG.debug('Parsing requirements from %s', filename)
-                    with open(filename, 'rb') as fh:
-                        for line in fh:
-                            LOG.debug(">> %s", line.strip())
                     reqs = tuple(pip_req.parse_requirements(filename))
                     REQUIREMENT_FILE_CACHE[cache_key] = reqs
                 pip_requirements.extend(reqs)
