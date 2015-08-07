@@ -49,6 +49,7 @@ class GitDownloader(Downloader):
         self._branch = self._get_string_from_dict(kwargs, 'branch')
         self._tag = self._get_string_from_dict(kwargs, 'tag')
         self._sha1 = self._get_string_from_dict(kwargs, 'sha1')
+        self._refspec = self._get_string_from_dict(kwargs, 'refspec')
         git_sources = len([a for a in (self._tag, self._sha1, self._branch) if a])
         if git_sources > 1:
             raise exceptions.ConfigException('Too many sources. Please, '
@@ -90,6 +91,10 @@ class GitDownloader(Downloader):
                      colorizer.quote(self._dst))
             cmd = ["git", "clone", self._uri, self._dst]
             sh.execute(cmd)
+        if self._refspec:
+            LOG.info("Fetching ref %s.", self._refspec)
+            cmd = ["git", "fetch", self._uri, self._refspec]
+            sh.execute(cmd, cwd=self._dst)
         if self._sha1:
             LOG.info("Adjusting to SHA1 %s.", colorizer.quote(self._sha1))
         elif tag:
