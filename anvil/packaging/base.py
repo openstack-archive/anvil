@@ -54,8 +54,10 @@ class InstallHelper(object):
 
 class DependencyHandler(object):
     """Basic class for handler of OpenStack dependencies."""
-    MAX_PIP_DOWNLOAD_ATTEMPTS = 4
-    PIP_DOWNLOAD_DELAY = 10
+
+    # Sometimes pip fails doing things, retry it when this happens...
+    RETRIES = 3
+    RETRY_DELAY = 10
 
     def __init__(self, distro, root_dir,
                  instances, opts, group, prior_groups):
@@ -65,6 +67,9 @@ class DependencyHandler(object):
         self.prior_groups = prior_groups
         self.opts = opts or {}
         self.group = group
+        self.retries = max(0, int(opts.get('pip_retries', self.RETRIES)))
+        self.retry_delay = max(0, float(opts.get('pip_retry_delay',
+                                                 self.RETRY_DELAY)))
         # Various paths we will use while operating
         self.deps_dir = sh.joinpths(self.root_dir, "deps")
         self.download_dir = sh.joinpths(self.deps_dir, "download")
@@ -356,8 +361,8 @@ class DependencyHandler(object):
                               self.download_dir,
                               pips_to_download,
                               output_filename)
-            utils.retry(self.MAX_PIP_DOWNLOAD_ATTEMPTS,
-                        self.PIP_DOWNLOAD_DELAY, try_download)
+
+            utils.retry(self.retries, self.retry_delay, try_download)
         pips_downloaded = [pip_helper.extract_requirement(p) for p in pips_to_download]
         what_downloaded = self._examine_download_dir(pips_downloaded, self.download_dir)
         return (pips_downloaded, what_downloaded)
