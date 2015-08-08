@@ -54,11 +54,6 @@ class VenvDependencyHandler(base.DependencyHandler):
     PREREQUISITE_PKGS = frozenset(['pbr'])
     PREREQUISITE_UPGRADE_PKGS = frozenset(['pip'])
 
-    # Sometimes pip fails downloading things, retry it when
-    # this happens...
-    _RETRIES = 3
-    _RETRY_DELAY = 5
-
     def __init__(self, distro, root_dir,
                  instances, opts, group, prior_groups):
         super(VenvDependencyHandler, self).__init__(distro, root_dir,
@@ -199,7 +194,7 @@ class VenvDependencyHandler(base.DependencyHandler):
             run_funcs = []
             for instance in instances:
                 func = functools.partial(utils.retry,
-                                         self._RETRIES, self._RETRY_DELAY,
+                                         self.retries, self.retry_delay,
                                          self._package_instance, instance,
                                          retryable_exceptions=retryable_exceptions)
                 run_funcs.append(func)
@@ -215,7 +210,7 @@ class VenvDependencyHandler(base.DependencyHandler):
                 self.package_instance(instance)
         return results
 
-    def _package_instance(self, instance, attempt):
+    def _package_instance(self, instance, attempt=0):
         if not self._is_buildable(instance):
             # Skip things that aren't python...
             LOG.warn("Skipping building %s (not python)",
