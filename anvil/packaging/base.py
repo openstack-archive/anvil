@@ -326,6 +326,21 @@ class DependencyHandler(object):
                     return False
         return True
 
+    def _try_download(self, pips_to_download, attempt=0):
+        def on_download_finish(time_taken):
+            LOG.info("Took %0.2f seconds to download...", time_taken)
+        LOG.info("Downloading %s dependencies with pip (attempt %s)...",
+                 len(pips_to_download), attempt)
+        output_filename = sh.joinpths(self.log_dir,
+                                      "pip-download-attempt-%s.log" % (attempt))
+        LOG.info("Please wait this may take a while...")
+        LOG.info("Check %s for download activity details...",
+                 colorizer.quote(output_filename))
+        utils.time_it(on_download_finish,
+                      pip_helper.download_dependencies,
+                      self.download_dir, pips_to_download,
+                      output_filename)
+
     def download_dependencies(self):
         """Download dependencies from `$deps_dir/download-requires`."""
         # NOTE(aababilov): do not drop download_dir - it can be reused
@@ -340,24 +355,9 @@ class DependencyHandler(object):
         if self._requirements_satisfied(pips_to_download, self.download_dir):
             LOG.info("All python dependencies have been already downloaded")
         else:
-            def on_download_finish(time_taken):
-                LOG.info("Took %0.2f seconds to download...", time_taken)
-
-            def try_download(attempt):
-                LOG.info("Downloading %s dependencies with pip (attempt %s)...",
-                         len(pips_to_download), attempt)
-                output_filename = sh.joinpths(self.log_dir,
-                                              "pip-download-attempt-%s.log" % (attempt))
-                LOG.info("Please wait this may take a while...")
-                LOG.info("Check %s for download activity details...",
-                         colorizer.quote(output_filename))
-                utils.time_it(on_download_finish,
-                              pip_helper.download_dependencies,
-                              self.download_dir,
-                              pips_to_download,
-                              output_filename)
             utils.retry(self.MAX_PIP_DOWNLOAD_ATTEMPTS,
-                        self.PIP_DOWNLOAD_DELAY, try_download)
+                        self.PIP_DOWNLOAD_DELAY, self._try_download,
+                        pips_to_download)
         pips_downloaded = [pip_helper.extract_requirement(p) for p in pips_to_download]
         what_downloaded = self._examine_download_dir(pips_downloaded, self.download_dir)
         return (pips_downloaded, what_downloaded)
