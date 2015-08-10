@@ -170,7 +170,8 @@ class Helper(object):
         cmdline = self._start_cmdline(escape_values=True)[1:] + [
             "--scripts-dir", scripts_dir,
             "--source-only",
-            "--rpm-base", self._rpmbuild_dir
+            "--rpm-base", self._rpmbuild_dir,
+            "--debug",
         ]
         executable = " ".join(self._start_cmdline()[0:1])
         params = {
@@ -193,7 +194,7 @@ class Helper(object):
 
     def build_srpm(self, source, log_filename,
                    release=None, with_tests=False):
-        cmdline = self._start_cmdline() + ["--source-only"]
+        cmdline = self._start_cmdline() + ["--source-only", "--debug"]
         if release is not None:
             cmdline.extend(["--release", release])
         if with_tests:
