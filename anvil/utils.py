@@ -21,6 +21,7 @@ import binascii
 import collections
 import contextlib
 import glob
+import inspect
 import json
 import os
 import random
@@ -103,6 +104,39 @@ class ExponentialBackoff(object):
     def __str__(self):
         vals = [str(v) for v in self]
         return "Backoff %s" % (vals)
+
+
+def get_callback_name(cb):
+    """Tries to get a callbacks fully-qualified name.
+
+    If no name can be produced ``repr(cb)`` is called and returned.
+    """
+    segments = []
+    try:
+        segments.append(cb.__qualname__)
+    except AttributeError:
+        try:
+            segments.append(cb.__name__)
+            if inspect.ismethod(cb):
+                try:
+                    # This attribute doesn't exist on py3.x or newer, so
+                    # we optionally ignore it... (on those versions of
+                    # python `__qualname__` should have been found anyway).
+                    segments.insert(0, cb.im_class.__name__)
+                except AttributeError:
+                    pass
+        except AttributeError:
+            pass
+    if not segments:
+        return repr(cb)
+    else:
+        try:
+            # When running under sphinx it appears this can be none?
+            if cb.__module__:
+                segments.insert(0, cb.__module__)
+        except AttributeError:
+            pass
+        return ".".join(segments)
 
 
 def expand_template(contents, params):
@@ -198,11 +232,7 @@ def retry(attempts, delay, func, *args, **kwargs):
         raise ValueError("delay must be >= 0")
     if attempts < 0:
         raise ValueError("attempts must be >= 1")
-    func_name = "??"
-    try:
-        func_name = func.__name__
-    except AttributeError:
-        pass
+    func_name = get_callback_name(func)
     failures = []
     retryable_exceptions = kwargs.pop('retryable_exceptions', [Exception])
     retryable_exceptions = tuple(retryable_exceptions)
