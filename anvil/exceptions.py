@@ -37,15 +37,7 @@ class DownloadException(AnvilException):
     pass
 
 
-class BadParamException(AnvilException):
-    pass
-
-
 class NoTraceException(AnvilException):
-    pass
-
-
-class NoReplacementException(AnvilException):
     pass
 
 
