@@ -183,6 +183,10 @@ Openstack
 
 %prep
 %setup -q -n horizon-%{os_version}
+
+# remove precompiled egg-info
+rm -rf horizon.egg-info
+
 #for $idx, $fn in enumerate($patches)
 %patch$idx -p1
 #end for
