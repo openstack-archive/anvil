@@ -30,12 +30,8 @@ if not sys.stdout.isatty():
     LOG_COLOR = False
 
 
-def color_enabled():
-    return LOG_COLOR
-
-
 def quote(data, quote_color='green', **kargs):
-    if not color_enabled():
+    if not LOG_COLOR:
         return "'%s'" % (data)
     else:
         text = str(data)
@@ -53,7 +49,7 @@ def color(data, color_to_be, bold=False, underline=False, blink=False):
         text_attrs.append('underline')
     if blink:
         text_attrs.append('blink')
-    if color_enabled() and color_to_be in COLORS:
+    if LOG_COLOR and color_to_be in COLORS:
         return termcolor.colored(text, color_to_be, attrs=text_attrs)
     else:
         return text
