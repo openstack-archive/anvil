@@ -66,6 +66,7 @@ class VenvDependencyHandler(base.DependencyHandler):
                                                     prior_groups)
         self.cache_dir = sh.joinpths(self.root_dir, "pip-cache")
         self.jobs = max(0, int(opts.get('jobs', 0)))
+        self.install_counters = {}
 
     def _venv_directory_for(self, instance):
         return sh.joinpths(instance.get_option('component_dir'), 'venv')
@@ -97,7 +98,10 @@ class VenvDependencyHandler(base.DependencyHandler):
         else:
             for req in requirements:
                 cmd.append(str(req))
-        sh.execute(cmd, env_overrides=env_overrides)
+        count = self.install_counters.get(instance.name, 0)
+        self.install_counters[instance.name] = count + 1
+        out_filename = sh.joinpths(self.log_dir, "venv-install-%s-%s.log" % (instance.name, count))
+        sh.execute_save_output(cmd, out_filename, env_overrides=env_overrides)
 
     def _is_buildable(self, instance):
         app_dir = instance.get_option('app_dir')
@@ -164,6 +168,7 @@ class VenvDependencyHandler(base.DependencyHandler):
 
     def package_start(self):
         super(VenvDependencyHandler, self).package_start()
+        self.install_counters.clear()
         base_cmd = env.get_key('VENV_CMD', default_value='virtualenv')
         for instance in self.instances:
             if not self._is_buildable(instance):
@@ -173,7 +178,8 @@ class VenvDependencyHandler(base.DependencyHandler):
             sh.mkdirslist(venv_dir, tracewriter=self.tracewriter)
             cmd = [base_cmd, '--clear', venv_dir]
             LOG.info("Creating virtualenv at %s", colorizer.quote(venv_dir))
-            sh.execute(cmd)
+            out_filename = sh.joinpths(self.log_dir, "venv-create-%s.log" % (instance.name))
+            sh.execute_save_output(cmd, out_filename)
             self._install_into_venv(instance, self.PREREQUISITE_PKGS)
             self._install_into_venv(instance,
                                     self.PREREQUISITE_UPGRADE_PKGS,
