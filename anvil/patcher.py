@@ -20,20 +20,19 @@ from anvil import utils
 
 
 LOG = logging.getLogger(__name__)
-
-# TODO(harlowja): use git patching vs. raw patching??
 PATCH_CMD = ['patch', '-p1']
+GIT_PATCH_CMD = ['git', 'am']
 
 
-def _is_patch(path):
-    if not path.endswith(".patch"):
+def _is_patch(path, patch_ext='.patch'):
+    if not path.endswith(patch_ext):
         return False
     if not sh.isfile(path):
         return False
     return True
 
 
-def expand_patches(paths):
+def expand_patches(paths, patch_ext='.patch'):
     if not paths:
         return []
     all_paths = []
@@ -45,20 +44,22 @@ def expand_patches(paths):
         else:
             all_paths.append(path)
     # Now filter on valid patches
-    return [p for p in all_paths if _is_patch(p)]
+    return [p for p in all_paths if _is_patch(p, patch_ext=patch_ext)]
 
 
 def apply_patches(patch_files, working_dir):
-    apply_files = expand_patches(patch_files)
-    if not len(apply_files):
-        return
     if not sh.isdir(working_dir):
-        LOG.warn("Can only apply %s patches 'inside' a directory and not '%s'",
-                 len(apply_files), working_dir)
+        LOG.warn("Can only apply patches 'inside' a directory and not '%s'",
+                 working_dir)
         return
-    with utils.chdir(working_dir):
-        for p in apply_files:
-            LOG.debug("Applying patch %s in directory %s", p, working_dir)
-            patch_contents = sh.load_file(p)
-            if len(patch_contents):
-                sh.execute(PATCH_CMD, process_input=patch_contents)
+    for patch_ext, patch_cmd in [('.patch', PATCH_CMD), ('.git_patch', GIT_PATCH_CMD)]:
+        apply_files = expand_patches(patch_files, patch_ext=patch_ext)
+        if not len(apply_files):
+            continue
+        with utils.chdir(working_dir):
+            for p in apply_files:
+                LOG.debug("Applying patch %s using command %s in directory %s",
+                          p, patch_cmd, working_dir)
+                patch_contents = sh.load_file(p)
+                if len(patch_contents):
+                    sh.execute(patch_cmd, process_input=patch_contents)
