@@ -3,6 +3,8 @@
 # process (and later running processes...).
 
 pip>=6
+setuptools>=18.2
+
 pkginfo
 cheetah>=2.4.4
 iniparse
