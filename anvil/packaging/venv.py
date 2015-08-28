@@ -51,7 +51,6 @@ class VenvInstallHelper(base.InstallHelper):
 
 
 class VenvDependencyHandler(base.DependencyHandler):
-    PREREQUISITE_PKGS = frozenset(['pbr'])
     PREREQUISITE_UPGRADE_PKGS = frozenset(['pip'])
 
     def __init__(self, distro, root_dir,
@@ -175,7 +174,6 @@ class VenvDependencyHandler(base.DependencyHandler):
             LOG.info("Creating virtualenv at %s", colorizer.quote(venv_dir))
             out_filename = sh.joinpths(self.log_dir, "venv-create-%s.log" % (instance.name))
             sh.execute_save_output(cmd, out_filename)
-            self._install_into_venv(instance, self.PREREQUISITE_PKGS)
             self._install_into_venv(instance,
                                     self.PREREQUISITE_UPGRADE_PKGS,
                                     upgrade=True)
