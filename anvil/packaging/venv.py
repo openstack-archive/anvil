@@ -58,7 +58,6 @@ class VenvDependencyHandler(base.DependencyHandler):
         super(VenvDependencyHandler, self).__init__(distro, root_dir,
                                                     instances, opts, group,
                                                     prior_groups)
-        self.cache_dir = sh.joinpths(self.root_dir, "pip-cache")
         self.jobs = max(0, int(opts.get('jobs', 0)))
         self.install_counters = {}
 
@@ -76,14 +75,9 @@ class VenvDependencyHandler(base.DependencyHandler):
         }
         if extra_env_overrides:
             env_overrides.update(extra_env_overrides)
-        sh.mkdirslist(self.cache_dir, tracewriter=self.tracewriter)
         cmd = list(base_pip) + ['install']
         if upgrade:
             cmd.append("--upgrade")
-        cmd.extend([
-            '--download-cache',
-            self.cache_dir,
-        ])
         if isinstance(requirements, six.string_types):
             cmd.extend([
                 '--requirement',

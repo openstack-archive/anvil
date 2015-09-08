@@ -14,7 +14,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from distutils import version as dist_version
 import glob
 import pkg_resources
 import re
@@ -22,15 +21,12 @@ import sys
 import tempfile
 import threading
 
+from pip import download as pip_download
 from pip import req as pip_req
+from pip import utils as pip_util
+
 import pkginfo
 import six
-
-try:
-    from pip import util as pip_util
-except ImportError:
-    # pip >=6 changed this location for some reason...
-    from pip import utils as pip_util
 
 from anvil import log as logging
 from anvil import shell as sh
@@ -45,7 +41,6 @@ EGGS_DETAILED = {}
 EGGS_DETAILED_LOCK = threading.RLock()
 
 PYTHON_KEY_VERSION_RE = re.compile("^(.+)-([0-9][0-9.a-zA-Z]*)$")
-PIP_VERSION = pkg_resources.get_distribution('pip').version
 PIP_EXECUTABLE = sh.which_first(['pip', 'pip-python'])
 
 
@@ -208,6 +203,7 @@ def parse_requirements(contents):
 
 def read_requirement_files(files):
     pip_requirements = []
+    session = pip_download.PipSession()
     for filename in files:
         if sh.isfile(filename):
             cache_key = "f:%s:%s" % (sh.abspth(filename), sh.getsize(filename))
@@ -215,7 +211,8 @@ def read_requirement_files(files):
                 try:
                     reqs = REQUIREMENT_FILE_CACHE[cache_key]
                 except KeyError:
-                    reqs = tuple(pip_req.parse_requirements(filename))
+                    reqs = tuple(pip_req.parse_requirements(filename,
+                                                            session=session))
                     REQUIREMENT_FILE_CACHE[cache_key] = reqs
                 pip_requirements.extend(reqs)
     return (pip_requirements,
@@ -236,23 +233,15 @@ def download_dependencies(download_dir, pips_to_download, output_filename):
     if sh.isdir(build_path):
         sh.deldir(build_path)
     sh.mkdir(build_path)
-    # Ensure certain directories exist that we want to exist (but we don't
-    # want to delete them run after run).
-    cache_path = sh.joinpths(download_dir, ".cache")
-    if not sh.isdir(cache_path):
-        sh.mkdir(cache_path)
     cmdline = [
         PIP_EXECUTABLE, '-v',
         'install', '-I', '-U',
         '--download', download_dir,
         '--build', build_path,
-        '--download-cache', cache_path,
+        # Don't download wheels since we lack the ability to create
+        # rpms from them (until future when we will have it, if ever)...
+        "--no-use-wheel",
     ]
-    # Don't download wheels...
-    #
-    # See: https://github.com/pypa/pip/issues/1439
-    if dist_version.StrictVersion(PIP_VERSION) >= dist_version.StrictVersion('1.5'):
-        cmdline.append("--no-use-wheel")
     for p in pips_to_download:
         for p_seg in _split(p):
             if p_seg:
