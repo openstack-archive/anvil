@@ -1,0 +1,60 @@
+{
+    "context_is_admin":  "role:admin",
+    "admin_or_owner":  "is_admin:True or project_id:%(project_id)s",
+    "default": "rule:admin_or_owner",
+    "admin_api": "is_admin:True",
+
+    "bay:create": "rule:default",
+    "bay:delete": "rule:default",
+    "bay:detail": "rule:default",
+    "bay:get": "rule:default",
+    "bay:get_all": "rule:default",
+    "bay:update": "rule:default",
+
+    "baymodel:create": "rule:default",
+    "baymodel:delete": "rule:default",
+    "baymodel:detail": "rule:default",
+    "baymodel:get": "rule:default",
+    "baymodel:get_all": "rule:default",
+    "baymodel:update": "rule:default",
+
+    "node:create": "rule:default",
+    "node:delete": "rule:default",
+    "node:detail": "rule:default",
+    "node:get": "rule:default",
+    "node:get_all": "rule:default",
+    "node:update": "rule:default",
+
+    "pod:create": "rule:default",
+    "pod:delete": "rule:default",
+    "pod:detail": "rule:default",
+    "pod:get": "rule:default",
+    "pod:get_all": "rule:default",
+    "pod:update": "rule:default",
+
+    "rc:create": "rule:default",
+    "rc:delete": "rule:default",
+    "rc:detail": "rule:default",
+    "rc:get": "rule:default",
+    "rc:get_all": "rule:default",
+    "rc:update": "rule:default",
+
+    "service:create": "rule:default",
+    "service:delete": "rule:default",
+    "service:detail": "rule:default",
+    "service:get": "rule:default",
+    "service:get_all": "rule:default",
+    "service:update": "rule:default",
+
+    "container:create": "rule:default",
+    "container:delete": "rule:default",
+    "container:detail": "rule:default",
+    "container:get": "rule:default",
+    "container:get_all": "rule:default",
+    "container:update": "rule:default",
+
+    "certificate:create": "rule:default",
+    "certificate:get": "rule:default",
+
+    "magnum-service:get_all": "rule:admin_api"
+}

@@ -59,6 +59,12 @@ oslo-config:
 oslo-incubator:
   repo: git://github.com/openstack/oslo-incubator.git
   tag: 2015.1.0
+magnum:
+  repo: git://github.com/openstack/magnum.git
+  tag: 2015.1.0
+magnum-client:
+  repo: git://github.com/openstack/python-magnumclient.git
+  tag: 0.0.1
 neutron-client:
   repo: git://github.com/openstack/python-neutronclient.git
   tag: 2.4.0
