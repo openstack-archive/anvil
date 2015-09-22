@@ -4,7 +4,7 @@
 /dist/
 *.egg-info
 
-doc/source/sourcecode
+docs/source/sourcecode
 
 # Metafiles
 AUTHORS
