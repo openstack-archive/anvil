@@ -1,8 +1,8 @@
 .. _summary:
 
-===============
+=======
 Summary
-===============
+=======
 
 Anvil is a forging tool to help build OpenStack components and their
 dependencies into a complete package-oriented system.
@@ -90,11 +90,11 @@ Package tracking and building
   * For example uncommenting the following in the `bootstrap`_ file will allow
     anvil to find dependencies in the `epel`_ repository.
 
-.. _bootstrap: http://github.com/stackforge/anvil/blob/master/tools/bootstrap/CommonRedHat#L7
+.. _bootstrap: http://github.com/openstack/anvil/blob/master/tools/bootstrap/CommonRedHat#L7
 .. _OpenStack: http://openstack.org/
 .. _chef: http://www.opscode.com/chef/
 .. _daemon: http://en.wikipedia.org/wiki/Daemon_(computing)
-.. _devstack: http://www.devstack.org/
+.. _devstack: http://docs.openstack.org/developer/devstack/
 .. _epel: http://fedoraproject.org/wiki/EPEL
 .. _puppet: http://puppetlabs.com/
 .. _pypi: http://pypi.python.org/pypi

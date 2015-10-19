@@ -101,7 +101,7 @@ We’ll grab the latest version of ANVIL via git:
 
 ::
 
-    $ git clone git://github.com/stackforge/anvil.git
+    $ git clone https://git.openstack.org/openstack/anvil.git
     $ cd anvil
 
 

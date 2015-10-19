@@ -4,7 +4,7 @@
 
 Anvil is written in python (we should be compatible with ``python >= 2.6``).
 
-Anvil's official repository is located on GitHub at: https://github.com/stackforge/anvil
+Anvil's official repository is located on GitHub at: https://github.com/openstack/anvil
 
 Besides the master branch that tracks the OpenStack ``trunk`` tags will maintained for all OpenStack releases starting with `essex`.
 
@@ -66,4 +66,3 @@ the [gettext] module and can lead to confusion if used for other purposes.
 [pylint]: http://pypi.python.org/pypi/pylint
 [markdown]: http://daringfireball.net/projects/markdown/
 [rst]: http://docutils.sourceforge.net/docs/user/rst/quickstart.html
-
