@@ -1,0 +1,78 @@
+---
+# Persona that includes all known components
+components:
+# Order matters here!
+# Oslo libraries
+- oslo-config
+- oslo-messaging
+- pycadf
+# Core components
+- keystone
+- glance
+- ceilometer
+- cinder
+- heat
+- magnum
+- neutron
+- neutron-fwaas
+- neutron-lbaas
+- neutron-vpnaas
+- nova
+- trove
+# Client used by components
+- ceilometer-client
+- cinder-client
+- glance-client
+- heat-client
+- keystone-client
+- magnum-client
+- neutron-client
+- nova-client
+- swift-client
+- trove-client
+- openstack-client
+# Horizon is given a later priority (typically everything is done at the
+# same time in stage zero); in its own stage since it requires basically all
+# the existing things to be pre-built/started... before it can be...
+- django-openstack-auth: 1
+- horizon: 2
+subsystems:
+    glance:
+    - api
+    - registry
+    keystone:
+    - all
+    nova:
+    - api
+    - cert
+    - compute
+    - conductor
+    - scheduler
+    neutron:
+    - server
+    - agent
+    - l3-agent
+    - metadata-agent
+    - dhcp-agent
+    cinder:
+    - api
+    - scheduler
+    - volume
+    heat:
+    - api
+    - api-cfn
+    - api-cloudwatch
+    - engine
+    ceilometer:
+    - api
+    - collector
+    - compute
+    - central
+    magnum:
+    - api
+    - conductor
+supports:
+- rhel
+- fedora
+- centos
+...

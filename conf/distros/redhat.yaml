@@ -137,6 +137,10 @@ components:
         python_entrypoints: True
     neutron-client:
         python_entrypoints: True
+    magnum:
+        python_entrypoints: True
+    magnum-client:
+        python_entrypoints: True
     nova:
         python_entrypoints: True
         pips:
