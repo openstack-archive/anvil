@@ -17,8 +17,8 @@ Source code
 
 The source code is on github located at:
 
-http://git.openstack.org/cgit/stackforge/anvil (mirrored @
-http://github.com/stackforge/anvil/).
+http://git.openstack.org/cgit/openstack/anvil (mirrored @
+http://github.com/openstack/anvil/).
 
 Feel free to fork it and `contribute`_ to it.
 
@@ -55,7 +55,7 @@ Help and developer work/time is always much appreciated!
 .. _bug: http://bugs.launchpad.net/anvil
 .. _contribute: http://docs.openstack.org/infra/manual/developers.html
 .. _freenode: http://freenode.net/irc_servers.shtml
-.. _hacking guidelines: http://github.com/stackforge/anvil/blob/master/HACKING.md
+.. _hacking guidelines: http://github.com/openstack/anvil/blob/master/HACKING.md
 .. _havana: http://wiki.openstack.org/wiki/Releases
 .. _launchpad’s issue tracking system: http://launchpad.net/anvil
 .. _releases: http://wiki.openstack.org/wiki/Releases

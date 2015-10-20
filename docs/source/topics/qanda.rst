@@ -47,7 +47,7 @@ An example of this, lets adjust ``nova`` to use the ``stable/essex`` branch.
 ::
 
     nova:
-        repo: git://github.com/openstack/nova.git
+        repo: https://github.com/openstack/nova.git
         branch: stable/essex
 
 - Component origin parameters are:
