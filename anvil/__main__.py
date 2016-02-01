@@ -104,7 +104,7 @@ def run(args):
             LOG.info("Creating anvil auxiliary directory at path: %s", d)
             sh.mkdir(d)
     except OSError as e:
-        LOG.warn("Failed ensuring auxiliary directories due to %s", e)
+        LOG.warning("Failed ensuring auxiliary directories due to %s", e)
 
     # Load the origins...
     origins = _origins.load(args['origins_fn'],
@@ -183,7 +183,7 @@ def store_current_settings(c_settings):
     try:
         sh.write_file(SETTINGS_FILE, buf.getvalue())
     except OSError as e:
-        LOG.warn("Failed writing to %s due to %s", SETTINGS_FILE, e)
+        LOG.warning("Failed writing to %s due to %s", SETTINGS_FILE, e)
 
 
 def ensure_perms():
