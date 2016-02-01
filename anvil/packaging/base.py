@@ -287,10 +287,10 @@ class DependencyHandler(object):
                            header="Full known python dependency list")
 
         for (name, lines) in incompatibles.items():
-            LOG.warn("Incompatible requirements found for %s",
+            LOG.warning("Incompatible requirements found for %s",
                      colorizer.quote(name, quote_color='red'))
             for line in lines:
-                LOG.warn(line)
+                LOG.warning(line)
 
         if not self.pips_to_install:
             LOG.error("No valid dependencies found. Something went wrong.")

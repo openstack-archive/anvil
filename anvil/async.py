@@ -34,7 +34,7 @@ def _chained_worker(ident, shared_death, queue, futs):
     running = True
     while running:
         if shared_death.is_set():
-            LOG.warn("Worker %s dying unhappily...", ident)
+            LOG.warning("Worker %s dying unhappily...", ident)
             running = False
         else:
             w = queue.get()

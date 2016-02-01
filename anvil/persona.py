@@ -49,7 +49,7 @@ class Persona(object):
                             'disabled': False,
                         }
                     else:
-                        LOG.warn("Automatically disabling %s, not present in"
+                        LOG.warning("Automatically disabling %s, not present in"
                                  " origin file but present in desired"
                                  " persona (origin required).",
                                  colorizer.quote(c, quote_color='red'))
