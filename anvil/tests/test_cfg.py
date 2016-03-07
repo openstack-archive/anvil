@@ -248,7 +248,7 @@ class TestYamlRefLoader(test.TestCase):
 
         processed = self.loader.load('sample')
 
-        self.assertTrue(isinstance(processed, utils.OrderedDict))
+        self.assertIsInstance(processed, utils.OrderedDict)
         self.assertEqual(len(processed), 3)
         self.assertEqual(processed['ip'], utils.get_host_ip())
         self.assertEqual(processed['host'], shell.hostname())
@@ -265,7 +265,7 @@ class TestYamlRefLoader(test.TestCase):
 
         processed = self.loader.load('sample')
 
-        self.assertTrue(isinstance(processed, utils.OrderedDict))
+        self.assertIsInstance(processed, utils.OrderedDict)
         self.assertEqual(len(processed), 1)
         self.assertEqual(processed['multi_ref'],
                          "9 + 10 + 11 + " + shell.gethomedir() + " + 12")
@@ -349,7 +349,7 @@ class TestYamlRefLoader(test.TestCase):
 
         processed = self.loader.load('sample')
 
-        self.assertTrue(isinstance(processed, utils.OrderedDict))
+        self.assertIsInstance(processed, utils.OrderedDict)
         #self.assertEqual(len(processed), 11)
         self.assertEqual(processed['stable'], 9)
         self.assertEqual(processed['ref0'], 9)
