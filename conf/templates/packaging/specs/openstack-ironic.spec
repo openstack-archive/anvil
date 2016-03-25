@@ -27,8 +27,14 @@ Group:      System Environment/Base
 URL:        http://www.openstack.org
 
 Source0:    %{python_name}-%{os_version}.tar.gz
+%if ! (0%{?rhel} > 6)
 Source10:   openstack-ironic-api.init
 Source11:   openstack-ironic-conductor.init
+%else
+Source10:   openstack-ironic-api.service
+Source11:   openstack-ironic-conductor.service
+%endif
+
 Source20:   ironic.logrotate
 Source53:   ironic-sudoers
 
@@ -63,9 +69,14 @@ export PBR_VERSION=$version
 %{__python2} setup.py install -O1 --skip-build --root=%{buildroot}
 
 # install init files
-mkdir -p %{buildroot}%{_unitdir}
+%if ! (0%{?rhel} > 6)
 install -p -D -m 755 %{SOURCE10} %{buildroot}%{_initrddir}/openstack-ironic-api
 install -p -D -m 755 %{SOURCE11} %{buildroot}%{_initrddir}/openstack-ironic-conductor
+%else
+mkdir -p %{buildroot}%{_unitdir}
+install -p -D -m 755 %{SOURCE10} %{buildroot}%{_unitdir}/openstack-ironic-api.service
+install -p -D -m 755 %{SOURCE11} %{buildroot}%{_unitdir}/openstack-ironic-conductor.service
+%endif
 
 install -d -m 755 %{buildroot}%{_sharedstatedir}/ironic/
 install -d -m 755 %{buildroot}%{_sysconfdir}/ironic/rootwrap.d
@@ -132,7 +143,9 @@ Components common to all OpenStack Ironic services
 %{_bindir}/ironic-rootwrap
 
 #if $newer_than_eq('2014.2')
+#if $older_than_eq('2015.1')
 %{_bindir}/ironic-nova-bm-migrate
+#end if
 #end if
 
 %attr(-,ironic,ironic) %{_sharedstatedir}/ironic
@@ -171,7 +184,11 @@ Ironic API for management and provisioning of physical machines
 %files api
 %doc LICENSE
 %{_bindir}/ironic-api
+%if ! (0%{?rhel} > 6)
 %{_initrddir}/openstack-ironic-api
+%else
+%{_unitdir}/openstack-ironic-api
+%endif
 
 %package conductor
 Summary: The Ironic Conductor
@@ -180,12 +197,17 @@ Group: System Environment/Base
 Requires: %{name}-common = %{version}-%{release}
 Requires: python-%{python_name} = %{version}-%{release}
 
+Requires: ipmitool
+
 %description conductor
 Ironic Conductor for management and provisioning of physical machines
 
 %files conductor
 %doc LICENSE
 %{_bindir}/ironic-conductor
+%if ! (0%{?rhel} > 6)
 %{_initrddir}/openstack-ironic-conductor
-
+%else
+%{_unitdir}/openstack-ironic-conductor
+%endif
 %changelog
