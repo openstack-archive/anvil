@@ -15,8 +15,7 @@
 #    under the License.
 
 # R0902: Too many instance attributes
-# R0921: Abstract class not referenced
-#pylint: disable=R0902,R0921
+#pylint: disable=R0902
 
 import functools
 
