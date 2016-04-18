@@ -31,6 +31,7 @@ dependency_handler:
         pyscss: python-scss
     ignoreable_pips:
     - distribute # distribute has been replaced by setuptools
+    - trollius # this project is dead/deprecated...
     arch_dependent:
     - PuLP
     - cryptography
