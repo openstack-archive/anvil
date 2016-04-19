@@ -122,11 +122,16 @@ class YumDependencyHandler(base.DependencyHandler):
         if not isinstance(epoch_skips, (list, tuple)):
             epoch_skips = [i.strip() for i in epoch_skips.split(",")]
         built_epochs = {}
-        for name in self.python_names:
+        for instance, egg in self.iter_instance_and_eggs(True):
+            name = egg['name']
+            epoch = None
             if name in epoch_map:
-                built_epochs[name] = str(epoch_map.pop(name))
+                epoch = str(epoch_map.pop(name))
             else:
-                built_epochs[name] = str(self.OPENSTACK_EPOCH)
+                epoch = instance.get_option('epoch')
+            if not epoch:
+                epoch = str(self.OPENSTACK_EPOCH)
+            built_epochs[name] = epoch
         # Ensure epochs set by a yum searching (that are not in the list of
         # epochs to provide) are correctly set when building dependent
         # packages...

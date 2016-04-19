@@ -102,23 +102,22 @@ class DependencyHandler(object):
             ignore_pips.update(ignore_distro_pips)
         self.ignore_pips = ignore_pips
 
-    def _python_eggs(self, priors):
-        egg_infos = []
+    def iter_instance_and_eggs(self, include_priors):
         groups = [self.instances]
-        if priors:
+        if include_priors:
             for _group, prior_instances in self.prior_groups:
                 groups.append(list(prior_instances.values()))
         for instances in groups:
             for i in instances:
                 try:
-                    egg_infos.append(dict(i.egg_info))
+                    yield i, dict(i.egg_info)
                 except AttributeError:
                     pass
-        return egg_infos
 
     @property
     def python_names(self):
-        return [e['name'] for e in self._python_eggs(True)]
+        return [egg['name']
+                for _instance, egg in self.iter_instance_and_eggs(True)]
 
     @staticmethod
     def _get_package_dirs(instances):
@@ -181,7 +180,8 @@ class DependencyHandler(object):
             sh.unlink(self.tracereader.filename())
 
     def _scan_pip_requires(self, requires_files):
-        own_eggs = self._python_eggs(False)
+        own_eggs = [egg for _instance, egg
+                    in self.iter_instance_and_eggs(False)]
 
         def replace_forced_requirements(fn, forced_by_key):
             old_lines = sh.load_file(fn).splitlines()
