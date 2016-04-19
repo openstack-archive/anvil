@@ -848,11 +848,18 @@ class YumDependencyHandler(base.DependencyHandler):
             ])
 
         # Return the first that exists (if any from this list)
-        for (rpm_name, template_name) in search_names:
-            spec_filename = sh.joinpths(settings.TEMPLATE_DIR,
-                                        self.SPEC_TEMPLATE_DIR, template_name)
-            if sh.isfile(spec_filename):
-                return (rpm_name, template_name)
+        for release in (self.opts['release'], None):
+            for (rpm_name, template_name) in search_names:
+                if release is not None:
+                    spec_filename = sh.joinpths(settings.TEMPLATE_DIR,
+                                                self.SPEC_TEMPLATE_DIR,
+                                                release, template_name)
+                else:
+                    spec_filename = sh.joinpths(settings.TEMPLATE_DIR,
+                                                self.SPEC_TEMPLATE_DIR,
+                                                template_name)
+                if sh.isfile(spec_filename):
+                    return (rpm_name, template_name)
         return (None, None)
 
     def _build_openstack_package(self, instance):
