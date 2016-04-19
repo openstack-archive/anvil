@@ -632,7 +632,7 @@ class YumDependencyHandler(base.DependencyHandler):
             'newer_than': newer_than,
         }
 
-    def _write_spec_file(self, instance, rpm_name, template_name, params):
+    def _write_spec_file(self, instance, rpm_name, template_path, params):
         requires_what = params.get('requires', [])
         conflicts_what = params.get('conflicts', [])
         test_requires_what = params.get('test_requires', [])
@@ -666,8 +666,9 @@ class YumDependencyHandler(base.DependencyHandler):
             filename)
         parsed_version = pkg_resources.parse_version(params["version"])
         params.update(self._make_spec_functors(parsed_version))
-        content = utils.load_template(self.SPEC_TEMPLATE_DIR, template_name)[1]
-        spec_filename = sh.joinpths(self.rpmbuild_dir, "SPECS", "%s.spec" % rpm_name)
+        content = sh.load_file(template_path)
+        spec_filename = sh.joinpths(
+            self.rpmbuild_dir, "SPECS", "%s.spec" % rpm_name)
         sh.write_file(spec_filename, utils.expand_template(content, params),
                       tracewriter=self.tracewriter)
         return spec_filename
@@ -848,11 +849,18 @@ class YumDependencyHandler(base.DependencyHandler):
             ])
 
         # Return the first that exists (if any from this list)
-        for (rpm_name, template_name) in search_names:
-            spec_filename = sh.joinpths(settings.TEMPLATE_DIR,
-                                        self.SPEC_TEMPLATE_DIR, template_name)
-            if sh.isfile(spec_filename):
-                return (rpm_name, template_name)
+        for release in (self.opts['release'], None):
+            for (rpm_name, template_name) in search_names:
+                if release:
+                    spec_filename = sh.joinpths(settings.TEMPLATE_DIR,
+                                                self.SPEC_TEMPLATE_DIR,
+                                                release, template_name)
+                else:
+                    spec_filename = sh.joinpths(settings.TEMPLATE_DIR,
+                                                self.SPEC_TEMPLATE_DIR,
+                                                template_name)
+                if sh.isfile(spec_filename):
+                    return (rpm_name, spec_filename)
         return (None, None)
 
     def _build_openstack_package(self, instance):
@@ -860,8 +868,10 @@ class YumDependencyHandler(base.DependencyHandler):
         patches = instance.list_patches("package")
         params['patches'] = [sh.basename(fn) for fn in patches]
 
-        build_name = instance.get_option('build_name', default_value=instance.name)
-        (rpm_name, template_name) = self._find_template_and_rpm_name(instance, build_name)
+        build_name = instance.get_option('build_name',
+                                         default_value=instance.name)
+        rpm_name, template_path = self._find_template_and_rpm_name(
+            instance, build_name)
         try:
             egg_name = instance.egg_info['name']
             params["version"] = instance.egg_info["version"]
@@ -878,9 +888,9 @@ class YumDependencyHandler(base.DependencyHandler):
                 params["apiname"] = instance.get_option(
                     'api_name', default_value=client_name.title())
 
-        if all((rpm_name, template_name)):
+        if all((rpm_name, template_path)):
             spec_filename = self._write_spec_file(instance, rpm_name,
-                                                  template_name, params)
+                                                  template_path, params)
             self._build_from_spec(instance, spec_filename, patches)
         else:
             self.py2rpm_helper.build_srpm(source=instance.get_option("app_dir"),
