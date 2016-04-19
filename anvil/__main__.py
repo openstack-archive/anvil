@@ -83,6 +83,10 @@ def run(args):
         raise excp.OptionException("Invalid origin file %r specified!" % (origins_fn))
     args['origins_fn'] = sh.abspth(origins_fn)
 
+    if not args['release']:
+        origins_base = sh.basename(origins_fn)
+        args['release'] = origins_base.split("-", 1)[0]
+
     # Determine the root directory...
     root_dir = sh.abspth(args.pop("dir"))
 
