@@ -191,6 +191,15 @@ def parse(previous_settings=None):
                            help=("When packaging do you want rpm to mark config "
                                  "files with %config or treat them as files and "
                                  "overwrite them each time on rpm install"))
+    build_group.add_option('-r', "--release",
+                           action="store",
+                           dest="release",
+                           default=None,
+                           metavar="RELEASE",
+                           help=("Name of release to use for rpm specification"
+                                 " files; if not provided then this will"
+                                 " be inferred (potentially incorrectly)"
+                                 " from the origins file"))
     parser.add_option_group(build_group)
 
     # Extract only what we care about, these will be passed
@@ -217,4 +226,5 @@ def parse(previous_settings=None):
         with open(options.distros_patch_fn) as fp:
             values['distros_patch'] = json.load(fp)
     values['venv_deploy_dir'] = options.venv_deploy_dir
+    values['release'] = options.release
     return values
