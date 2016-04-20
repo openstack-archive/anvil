@@ -1,8 +1,8 @@
 # -*- sh -*-
 
-## Bootstrap OEL 6.3 <-> 7.0 for Openstack Anvil
+## Bootstrap OEL 6.3 <-> 7.999.9999 for Openstack Anvil
 SHORTNAME=OEL
-MIN_RELEASE=6.3
-MAX_RELEASE=7.0
+MIN_RELEASE=7.0
+MAX_RELEASE=7.999.9999
 
 source "$BSCONF_DIR/CommonRedHat"
