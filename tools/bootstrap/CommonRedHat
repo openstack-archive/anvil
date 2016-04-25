@@ -2,11 +2,10 @@
 
 STEPS="selinux epel repos rpm_packages virtualenv"
 REPO_DIR=/etc/yum.repos.d/
-if [ "$MAJOR_RELEASE" = "6" ]; then
-    EPEL_RPM_URL="http://mirrors.kernel.org/fedora-epel/6/i386/epel-release-6-8.noarch.rpm"
-elif [ "$MAJOR_RELEASE" = "7" ]; then
-    EPEL_RPM_URL="http://mirrors.kernel.org/fedora-epel/7/x86_64/e/epel-release-7-5.noarch.rpm"
-fi
+
+# TODO(harlowja): make this more automatically findable, since it does
+# see to change at some frequency...
+EPEL_RPM_URL="http://mirrors.kernel.org/fedora-epel/7/x86_64/e/epel-release-7-6.noarch.rpm"
 
 # Ensure anvil python gets access to this...
 VENV_CMD="virtualenv"

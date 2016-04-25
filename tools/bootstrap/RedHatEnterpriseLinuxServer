@@ -1,8 +1,8 @@
 # -*- sh -*-
 
-## Bootstrap for Redhat Enterprise Linux 6.0 <-> 7.1.9999
+## Bootstrap for Redhat Enterprise Linux 7.0 <-> 7.999.9999
 SHORTNAME=RHEL
-MAX_RELEASE=7.1.9999
-MIN_RELEASE=6.0
+MAX_RELEASE=7.999.9999
+MIN_RELEASE=7.0
 
 source "$BSCONF_DIR/CommonRedHat"
