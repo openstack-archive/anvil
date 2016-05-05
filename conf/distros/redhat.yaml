@@ -32,6 +32,9 @@ dependency_handler:
     ignoreable_pips:
     - distribute # distribute has been replaced by setuptools
     - trollius # this project is dead/deprecated...
+    - openstack-doc-tools # not necessary to build all key components
+    - pywin32
+    - wmi
     arch_dependent:
     - PuLP
     - cryptography
@@ -50,6 +53,10 @@ dependency_handler:
       tablib:
         - "%global _python_bytecompile_errors_terminate_build 0"
       linecache2:
+        - "%global _python_bytecompile_errors_terminate_build 0"
+      pexpect:
+        - "%global _python_bytecompile_errors_terminate_build 0"
+      astroid:
         - "%global _python_bytecompile_errors_terminate_build 0"
 components:
     ceilometer-client:
@@ -196,6 +203,7 @@ components:
             metering-agent: openstack-neutron-metering-agen
             cisco-cfg-agent: openstack-neutron-cisco
             netns-cleanup: openstack-neutron
+            dev-server: openstack-neutron-dev-server
     neutron-lbaas:
         python_entrypoints: True
     neutron-fwaas:
