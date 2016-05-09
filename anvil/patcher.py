@@ -49,8 +49,8 @@ def expand_patches(paths, patch_ext='.patch'):
 
 def apply_patches(patch_files, working_dir):
     if not sh.isdir(working_dir):
-        LOG.warn("Can only apply patches 'inside' a directory and not '%s'",
-                 working_dir)
+        LOG.warning("Can only apply patches 'inside' a directory and not '%s'",
+                    working_dir)
         return
     already_applied = set()
     for patch_ext, patch_cmd in [('.patch', PATCH_CMD), ('.git_patch', GIT_PATCH_CMD)]:

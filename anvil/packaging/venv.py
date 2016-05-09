@@ -205,8 +205,8 @@ class VenvDependencyHandler(base.DependencyHandler):
     def _package_instance(self, instance, attempt=0):
         if not self._is_buildable(instance):
             # Skip things that aren't python...
-            LOG.warn("Skipping building %s (not python)",
-                     colorizer.quote(instance.name, quote_color='red'))
+            LOG.warning("Skipping building %s (not python)",
+                        colorizer.quote(instance.name, quote_color='red'))
             return
 
         def gather_extras():

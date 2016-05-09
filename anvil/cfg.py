@@ -72,10 +72,10 @@ class YamlMergeLoader(object):
                 try:
                     self._base_loader.update_cache(conf, persona_specific)
                 except exceptions.YamlConfigNotFoundException:
-                    LOG.warn("Unable to update the loaders cache with"
-                             " component '%s' configuration using"
-                             " persona specific data: %s", conf,
-                             persona_specific, exc_info=True)
+                    LOG.warning("Unable to update the loaders cache with"
+                                " component '%s' configuration using"
+                                " persona specific data: %s", conf,
+                                persona_specific, exc_info=True)
 
     def load(self, distro, component, persona=None, origins_patch=None):
         # NOTE (vnovikov): applying takes place before loading reference links
@@ -97,8 +97,8 @@ class YamlMergeLoader(object):
             try:
                 component_opts.append(self._base_loader.load(conf))
             except exceptions.YamlConfigNotFoundException:
-                LOG.warn("Unable to find component specific configuration"
-                         " for component '%s'", conf, exc_info=True)
+                LOG.warning("Unable to find component specific configuration"
+                            " for component '%s'", conf, exc_info=True)
 
         # NOTE (vnovikov): merge order is the same as arguments order below.
         merged_opts = utils.merge_dicts(
