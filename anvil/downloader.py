@@ -14,6 +14,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import six
 import abc
 import contextlib
 import functools
@@ -30,8 +31,8 @@ from anvil import shell as sh
 LOG = logging.getLogger(__name__)
 
 
+@six.add_metaclass(abc.ABCMeta)
 class Downloader(object):
-    __metaclass__ = abc.ABCMeta
 
     def __init__(self, uri, dst):
         self._uri = uri
