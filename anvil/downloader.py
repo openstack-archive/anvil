@@ -18,6 +18,7 @@ import abc
 import contextlib
 import functools
 import re
+import six
 import urllib2
 
 import progressbar
@@ -30,8 +31,8 @@ from anvil import shell as sh
 LOG = logging.getLogger(__name__)
 
 
+@six.add_metaclass(abc.ABCMeta)
 class Downloader(object):
-    __metaclass__ = abc.ABCMeta
 
     def __init__(self, uri, dst):
         self._uri = uri
