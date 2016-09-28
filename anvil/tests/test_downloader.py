@@ -33,30 +33,30 @@ class TestGitDownloader(test.TestCase):
         self.assertEqual(d._uri, self._uri)
         self.assertEqual(d._dst, self._dst)
         self.assertEqual(d._branch, 'master')
-        self.assertEqual(d._tag, None)
-        self.assertEqual(d._sha1, None)
+        self.assertIsNone(d._tag)
+        self.assertIsNone(d._sha1)
 
     def test_constructor_branch(self):
         branch = 'stable/havana'
         d = downloader.GitDownloader(self._uri, self._dst, branch=branch)
         self.assertEqual(d._branch, branch)
-        self.assertEqual(d._tag, None)
-        self.assertEqual(d._sha1, None)
+        self.assertIsNone(d._tag)
+        self.assertIsNone(d._sha1)
 
     def test_constructor_string_tag(self):
         d = downloader.GitDownloader(self._uri, self._dst, tag=self._tag)
         self.assertEqual(d._tag, self._tag)
-        self.assertEqual(d._sha1, None)
+        self.assertIsNone(d._sha1)
 
     def test_constructor_float_tag(self):
         tag = 2013.2
         d = downloader.GitDownloader(self._uri, self._dst, tag=tag)
         self.assertEqual(d._tag, str(tag))
-        self.assertEqual(d._sha1, None)
+        self.assertIsNone(d._sha1)
 
     def test_constructor_sha1(self):
         d = downloader.GitDownloader(self._uri, self._dst, sha1=self._sha1)
-        self.assertEqual(d._tag, None)
+        self.assertIsNone(d._tag)
         self.assertEqual(d._sha1, self._sha1)
 
     def test_constructor_raises_exception(self):
