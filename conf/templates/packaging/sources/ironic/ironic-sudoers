@@ -1,3 +1,0 @@
-Defaults:ironic !requiretty
-
-ironic ALL = (root) NOPASSWD: /usr/bin/ironic-rootwrap /etc/ironic/rootwrap.conf *

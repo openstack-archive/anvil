@@ -1,8 +1,0 @@
-# Settings for component nova
----
-
-# Used for associating the client package with a human understandable
-# name in its package description (not a code-name, like nova).
-api_name: "Compute"
-
-...

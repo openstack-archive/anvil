@@ -1,6 +1,0 @@
-# Settings for component general
----
-
-ip: "$(auto:ip)"
-
-...

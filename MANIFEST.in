@@ -1,9 +1,0 @@
-include README.rst
-include HACKING.md
-include requirements.txt
-include test-requirements.txt
-include LICENSE
-
-exclude .gitignore
-exclude .gitreview
-global-exclude *.pyc
