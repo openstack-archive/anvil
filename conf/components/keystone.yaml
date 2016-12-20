@@ -1,8 +1,0 @@
-# Settings for component keystone
----
-
-# Used for associating the client package with a human understandable
-# name in its package description (not a code-name, like keystone).
-api_name: "Identity"
-
-...

@@ -1,8 +1,0 @@
-# Settings for component magnum
----
-
-daemon_args:
-  magnum-api: "/usr/bin/magnum-api --config-file /etc/magnum/magnum.conf --log-dir=/var/log/magnum"
-  magnum-conductor: "/usr/bin/magnum-conductor --config-file /etc/magnum/magnum.conf --log-dir=/var/log/magnum"
-
-...

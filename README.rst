@@ -1,14 +1,20 @@
-We want more information!
-=========================
+=====
+Anvil
+=====
 
-Please check out: http://anvil.readthedocs.org.
+Dead
+----
 
-Licensing
-=========
+This project is no longer maintained.
 
-Anvil is licensed under the Apache License, Version 2.0 (the "License"); you
-may not use this file except in compliance with the License. You may obtain a
-copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+The contents of this repository are still available in the Git
+source code management system.  To see the contents of this
+repository before it reached its end of life, please check out the
+previous commit with "git checkout HEAD^1".
 
-Some tools are licensed under different terms; see tools/README.rst for
-more information.
+Contacts
+--------
+
+For any further questions, please email
+openstack-dev@lists.openstack.org or join #openstack-dev on
+Freenode.

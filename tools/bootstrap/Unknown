@@ -1,4 +1,0 @@
-# -*- sh -*-
-
-STEPS="virtualenv"
-VENV_CMD="virtualenv"

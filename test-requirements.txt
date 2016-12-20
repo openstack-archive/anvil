@@ -1,6 +1,0 @@
-pylint
-hacking>=0.10.0,<0.11
-mock>=1.0
-nose
-testtools>=0.9.34
-nose-parameterized
