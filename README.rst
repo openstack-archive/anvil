@@ -2,9 +2,6 @@
 Anvil
 =====
 
-Dead
-----
-
 This project is no longer maintained.
 
 The contents of this repository are still available in the Git
