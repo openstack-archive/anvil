@@ -1,8 +1,0 @@
----
-components:
-- global-requirements
-supports:
-- rhel
-- fedora
-- centos
-...
